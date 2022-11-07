@@ -25,7 +25,7 @@ void unsetLoadFileDataCallbackWrapper(void) {
 }
 
 char * rayLoadFileTextCallback(const char *fileName) {
-	char ** ref = (char **)malloc(sizeof(char *));
+	char ** ref = (char **)RL_MALLOC(sizeof(char *));
 	int sz = 0;
 	loadFileTextCallbackGo(fileName, strlen(fileName), &sz, ref);
 	if (sz == -1) {
@@ -33,7 +33,7 @@ char * rayLoadFileTextCallback(const char *fileName) {
 		return NULL;
 	}
 	char * refref = *ref;
-	free(ref);
+	RL_FREE(ref);
 	return refref;
 }
 
