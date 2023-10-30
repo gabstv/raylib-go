@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/gen2brain/raylib-go/raylib"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 func main() {
@@ -31,6 +31,9 @@ func main() {
 	// Get variable (uniform) location on the shader to connect with the program
 	// NOTE: If uniform variable could not be found in the shader, function returns -1
 	swirlCenterLoc := rl.GetShaderLocation(shader, "center")
+	if swirlCenterLoc == -1 {
+		println("Warning: [SHDR] Swirl Center uniform not found on shader")
+	}
 
 	swirlCenter := make([]float32, 2)
 	swirlCenter[0] = float32(screenWidth) / 2
@@ -38,9 +41,6 @@ func main() {
 
 	// Create a RenderTexture2D to be used for render to texture
 	target := rl.LoadRenderTexture(screenWidth, screenHeight)
-
-	// Setup orbital camera
-	rl.SetCameraMode(camera, rl.CameraOrbital) // Set an orbital camera mode
 
 	rl.SetTargetFPS(60)
 
@@ -55,7 +55,7 @@ func main() {
 		// Send new value to the shader to be used on drawing
 		rl.SetShaderValue(shader, swirlCenterLoc, swirlCenter, rl.ShaderUniformVec2)
 
-		rl.UpdateCamera(&camera) // Update camera
+		rl.UpdateCamera(&camera, rl.CameraOrbital) // Update camera with orbital camera mode
 
 		rl.BeginDrawing()
 

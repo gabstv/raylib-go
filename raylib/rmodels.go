@@ -97,17 +97,6 @@ func DrawCubeWiresV(position Vector3, size Vector3, col color.RGBA) {
 	C.DrawCubeWiresV(*cposition, *csize, *ccolor)
 }
 
-// DrawCubeTexture - Draw cube textured
-func DrawCubeTexture(texture Texture2D, position Vector3, width float32, height float32, length float32, col color.RGBA) {
-	ctexture := texture.cptr()
-	cposition := position.cptr()
-	cwidth := (C.float)(width)
-	cheight := (C.float)(height)
-	clength := (C.float)(length)
-	ccolor := colorCptr(col)
-	C.DrawCubeTexture(*ctexture, *cposition, cwidth, cheight, clength, *ccolor)
-}
-
 // DrawSphere - Draw sphere
 func DrawSphere(centerPos Vector3, radius float32, col color.RGBA) {
 	ccenterPos := centerPos.cptr()
@@ -238,6 +227,14 @@ func LoadModelFromMesh(data Mesh) Model {
 	cdata := data.cptr()
 	ret := C.LoadModelFromMesh(*cdata)
 	v := newModelFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// IsModelReady - Check if a model is ready
+func IsModelReady(model Model) bool {
+	cmodel := model.cptr()
+	ret := C.IsModelReady(*cmodel)
+	v := bool(ret)
 	return v
 }
 
@@ -407,6 +404,14 @@ func LoadMaterialDefault() Material {
 	return v
 }
 
+// IsMaterialReady - Check if a material is ready
+func IsMaterialReady(material Material) bool {
+	cmaterial := material.cptr()
+	ret := C.IsMaterialReady(*cmaterial)
+	v := bool(ret)
+	return v
+}
+
 // UnloadMaterial - Unload material textures from VRAM
 func UnloadMaterial(material Material) {
 	cmaterial := material.cptr()
@@ -535,6 +540,20 @@ func DrawBillboardRec(camera Camera, texture Texture2D, sourceRec Rectangle, cen
 	C.DrawBillboardRec(*ccamera, *ctexture, *csourceRec, *ccenter, *csize, *ctint)
 }
 
+// DrawBillboardPro - Draw a billboard texture with pro parameters
+func DrawBillboardPro(camera Camera, texture Texture2D, sourceRec Rectangle, position Vector3, up Vector3, size Vector2, origin Vector2, rotation float32, tint Color) {
+	ccamera := camera.cptr()
+	ctexture := texture.cptr()
+	csourceRec := sourceRec.cptr()
+	cposition := position.cptr()
+	cup := up.cptr()
+	csize := size.cptr()
+	corigin := origin.cptr()
+	crotation := (C.float)(rotation)
+	ctint := colorCptr(tint)
+	C.DrawBillboardPro(*ccamera, *ctexture, *csourceRec, *cposition, *cup, *csize, *corigin, crotation, *ctint)
+}
+
 // DrawMesh - Draw a single mesh
 func DrawMesh(mesh Mesh, material Material, transform Matrix) {
 	C.DrawMesh(*mesh.cptr(), *material.cptr(), *transform.cptr())
@@ -633,4 +652,9 @@ func GetRayCollisionQuad(ray Ray, p1, p2, p3, p4 Vector3) RayCollision {
 	ret := C.GetRayCollisionQuad(*cray, *cp1, *cp2, *cp3, *cp4)
 	v := newRayCollisionFromPointer(unsafe.Pointer(&ret))
 	return v
+}
+
+// UploadMesh - Upload vertex data into a VAO (if supported) and VBO
+func UploadMesh(mesh *Mesh, dynamic bool) {
+	C.UploadMesh(mesh.cptr(), C.bool(dynamic))
 }

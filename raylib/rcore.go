@@ -157,10 +157,17 @@ func RestoreWindow() {
 	C.RestoreWindow()
 }
 
-// SetWindowIcon - Set icon for window (only PLATFORM_DESKTOP)
+// SetWindowIcon - Set icon for window (single image, RGBA 32bit, only PLATFORM_DESKTOP)
 func SetWindowIcon(image Image) {
 	cimage := image.cptr()
 	C.SetWindowIcon(*cimage)
+}
+
+// SetWindowIcons - Set icon for window (multiple images, RGBA 32bit, only PLATFORM_DESKTOP)
+func SetWindowIcons(images []Image, count int32) {
+	cimages := (&images[0]).cptr()
+	cimagesCount := C.int(count)
+	C.SetWindowIcons(cimages, cimagesCount)
 }
 
 // SetWindowTitle - Set title for window (only PLATFORM_DESKTOP)
@@ -553,6 +560,33 @@ func ColorFromHSV(hue, saturation, value float32) color.RGBA {
 	return v
 }
 
+// ColorTint - Get color multiplied with another color
+func ColorTint(col color.RGBA, tint color.RGBA) color.RGBA {
+	ccolor := colorCptr(col)
+	ctint := colorCptr(tint)
+	ret := C.ColorTint(*ccolor, *ctint)
+	v := newColorFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// ColorBrightness - Get color with brightness correction, brightness factor goes from -1.0f to 1.0f
+func ColorBrightness(col color.RGBA, factor float32) color.RGBA {
+	ccolor := colorCptr(col)
+	cfactor := C.float(factor)
+	ret := C.ColorBrightness(*ccolor, cfactor)
+	v := newColorFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// ColorContrast - Get color with contrast correction, contrast values between -1.0f and 1.0f
+func ColorContrast(col color.RGBA, contrast float32) color.RGBA {
+	ccolor := colorCptr(col)
+	ccontrast := C.float(contrast)
+	ret := C.ColorContrast(*ccolor, ccontrast)
+	v := newColorFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
 // ColorAlpha - Returns color with alpha applied, alpha goes from 0.0f to 1.0f
 func ColorAlpha(col color.RGBA, alpha float32) color.RGBA {
 	return Fade(col, alpha)
@@ -598,7 +632,7 @@ func Vector3ToFloat(vec Vector3) []float32 {
 
 // MatrixToFloat - Converts Matrix to float32 slice
 func MatrixToFloat(mat Matrix) []float32 {
-	data := make([]float32, 0)
+	data := make([]float32, 16)
 
 	data[0] = mat.M0
 	data[1] = mat.M4

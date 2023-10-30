@@ -19,13 +19,13 @@ import (
 	"unsafe"
 )
 
-// Set the current threshold (minimum) log level
-func SetTraceLog(logLevel TraceLogLevel) {
+// SetTraceLogLevel - Set the current threshold (minimum) log level
+func SetTraceLogLevel(logLevel TraceLogLevel) {
 	clogLevel := (C.int)(logLevel)
 	C.SetTraceLogLevel(clogLevel)
 }
 
-// Show trace log messages (LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR...)
+// TraceLog - Show trace log messages (LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR...)
 func TraceLog(logLevel TraceLogLevel, text string, v ...interface{}) {
 	ctext := C.CString(fmt.Sprintf(text, v...))
 	defer C.free(unsafe.Pointer(ctext))
@@ -35,8 +35,8 @@ func TraceLog(logLevel TraceLogLevel, text string, v ...interface{}) {
 
 // HomeDir - Returns user home directory
 // NOTE: On Android this returns internal data path and must be called after InitWindow
-func HomeDir() string {	
-	if homeDir, err := os.UserHomeDir(); err != nil {
+func HomeDir() string {
+	if homeDir, err := os.UserHomeDir(); err == nil {
 		return homeDir
 	}
 	return ""

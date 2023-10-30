@@ -84,6 +84,21 @@ func LoadImageFromMemory(fileType string, fileData []byte, dataSize int32) *Imag
 	return v
 }
 
+// LoadImageFromScreen - Load image from screen buffer (screenshot)
+func LoadImageFromScreen() *Image {
+	ret := C.LoadImageFromScreen()
+	v := newImageFromPointer(unsafe.Pointer(&ret))
+	return v
+}
+
+// IsImageReady - Check if an image is ready
+func IsImageReady(image *Image) bool {
+	cimage := image.cptr()
+	ret := C.IsImageReady(*cimage)
+	v := bool(ret)
+	return v
+}
+
 // LoadTexture - Load an image as texture into GPU memory
 func LoadTexture(fileName string) Texture2D {
 	cfileName := C.CString(fileName)
@@ -116,10 +131,26 @@ func UnloadImage(image *Image) {
 	C.UnloadImage(*cimage)
 }
 
+// IsTextureReady - Check if a texture is ready
+func IsTextureReady(texture Texture2D) bool {
+	ctexture := texture.cptr()
+	ret := C.IsTextureReady(*ctexture)
+	v := bool(ret)
+	return v
+}
+
 // UnloadTexture - Unload texture from GPU memory
 func UnloadTexture(texture Texture2D) {
 	ctexture := texture.cptr()
 	C.UnloadTexture(*ctexture)
+}
+
+// IsRenderTextureReady - Check if a render texture is ready
+func IsRenderTextureReady(target RenderTexture2D) bool {
+	ctarget := target.cptr()
+	ret := C.IsRenderTextureReady(*ctarget)
+	v := bool(ret)
+	return v
 }
 
 // UnloadRenderTexture - Unload render texture from GPU memory
@@ -133,6 +164,11 @@ func LoadImageColors(img *Image) []color.RGBA {
 	cimg := img.cptr()
 	ret := C.LoadImageColors(*cimg)
 	return (*[1 << 24]color.RGBA)(unsafe.Pointer(ret))[0 : img.Width*img.Height]
+}
+
+// UnloadImageColors - Unload color data loaded with LoadImageColors()
+func UnloadImageColors(cols []color.RGBA) {
+	C.UnloadImageColors((*C.Color)(unsafe.Pointer(&cols[0])))
 }
 
 // LoadImageFromTexture - Get pixel data from GPU texture and return an Image
@@ -246,6 +282,13 @@ func ImageAlphaMask(image, alphaMask *Image) {
 func ImageAlphaPremultiply(image *Image) {
 	cimage := image.cptr()
 	C.ImageAlphaPremultiply(cimage)
+}
+
+// ImageBlurGaussian - Apply box blur
+func ImageBlurGaussian(image *Image, blurSize int32) {
+	cimage := image.cptr()
+	cblurSize := C.int(blurSize)
+	C.ImageBlurGaussian(cimage, cblurSize)
 }
 
 // ImageResize - Resize an image (bilinear filtering)
@@ -686,28 +729,6 @@ func DrawTextureRec(texture Texture2D, sourceRec Rectangle, position Vector2, ti
 	C.DrawTextureRec(*ctexture, *csourceRec, *cposition, *ctint)
 }
 
-// DrawTextureQuad - Draw texture quad with tiling and offset parameters
-func DrawTextureQuad(texture Texture2D, tiling, offset Vector2, rectangle Rectangle, tint color.RGBA) {
-	ctexture := texture.cptr()
-	ctiling := tiling.cptr()
-	coffset := offset.cptr()
-	crectangle := rectangle.cptr()
-	ctint := colorCptr(tint)
-	C.DrawTextureQuad(*ctexture, *ctiling, *coffset, *crectangle, *ctint)
-}
-
-// DrawTextureTiled - Draw part of a texture (defined by a rectangle) with rotation and scale tiled into dest
-func DrawTextureTiled(texture Texture2D, sourceRec, destRec Rectangle, origin Vector2, rotation float32, scale float32, tint color.RGBA) {
-	ctexture := texture.cptr()
-	csourceRec := sourceRec.cptr()
-	cdestRec := destRec.cptr()
-	corigin := origin.cptr()
-	crotation := (C.float)(rotation)
-	cscale := (C.float)(scale)
-	ctint := colorCptr(tint)
-	C.DrawTextureTiled(*ctexture, *csourceRec, *cdestRec, *corigin, crotation, cscale, *ctint)
-}
-
 // DrawTexturePro - Draw a part of a texture defined by a rectangle with 'pro' parameters
 func DrawTexturePro(texture Texture2D, sourceRec, destRec Rectangle, origin Vector2, rotation float32, tint color.RGBA) {
 	ctexture := texture.cptr()
@@ -717,4 +738,20 @@ func DrawTexturePro(texture Texture2D, sourceRec, destRec Rectangle, origin Vect
 	crotation := (C.float)(rotation)
 	ctint := colorCptr(tint)
 	C.DrawTexturePro(*ctexture, *csourceRec, *cdestRec, *corigin, crotation, *ctint)
+}
+
+// cptr returns C pointer
+func (n *NPatchInfo) cptr() *C.NPatchInfo {
+	return (*C.NPatchInfo)(unsafe.Pointer(n))
+}
+
+// DrawTextureNPatch - Draws a texture (or part of it) that stretches or shrinks nicely using n-patch info
+func DrawTextureNPatch(texture Texture2D, nPatchInfo NPatchInfo, dest Rectangle, origin Vector2, rotation float32, tint color.RGBA) {
+	ctexture := texture.cptr()
+	cnPatchInfo := nPatchInfo.cptr()
+	cdest := dest.cptr()
+	corigin := origin.cptr()
+	crotation := (C.float)(rotation)
+	ctint := colorCptr(tint)
+	C.DrawTextureNPatch(*ctexture, *cnPatchInfo, *cdest, *corigin, crotation, *ctint)
 }

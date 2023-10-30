@@ -1,7 +1,5 @@
 module github.com/gen2brain/raylib-go/raygui
 
-go 1.16
+go 1.19
 
-replace github.com/gen2brain/raylib-go/raylib => ../raylib
-
-require github.com/gen2brain/raylib-go/raylib v0.0.0-20211111173445-914ca1ffdc4d
+require github.com/gen2brain/raylib-go/raylib v0.0.0-20230621091943-a6644da2433f

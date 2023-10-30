@@ -33,18 +33,21 @@ package rl
 #include "external/glfw/src/egl_context.c"
 #include "external/glfw/src/osmesa_context.c"
 
-#cgo freebsd CFLAGS: -I/usr/local/include -Iexternal/glfw/include -DPLATFORM_DESKTOP
+#cgo freebsd CFLAGS: -I. -I/usr/local/include -Iexternal/glfw/include -DPLATFORM_DESKTOP
 #cgo freebsd LDFLAGS: -L/usr/local/lib
 
-#cgo freebsd,!wayland LDFLAGS: -lGL -lm -pthread -ldl -lrt -lX11
-#cgo freebsd,wayland LDFLAGS: -lGL -lm -pthread -ldl -lrt -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
+#cgo freebsd,!wayland LDFLAGS: -lm -pthread -ldl -lrt -lX11
+#cgo freebsd,wayland LDFLAGS: -lm -pthread -ldl -lrt -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
+
+#cgo freebsd,!angle LDFLAGS: -lGL
 
 #cgo freebsd,!wayland CFLAGS: -D_GLFW_X11
 #cgo freebsd,wayland CFLAGS: -D_GLFW_WAYLAND
 
-#cgo freebsd,opengl11 CFLAGS: -DGRAPHICS_API_OPENGL_11
-#cgo freebsd,opengl21 CFLAGS: -DGRAPHICS_API_OPENGL_21
-#cgo freebsd,opengl43 CFLAGS: -DGRAPHICS_API_OPENGL_43
-#cgo freebsd,!opengl11,!opengl21,!opengl43 CFLAGS: -DGRAPHICS_API_OPENGL_33
+#cgo freebsd,opengl11,!angle CFLAGS: -DGRAPHICS_API_OPENGL_11
+#cgo freebsd,opengl21,!angle CFLAGS: -DGRAPHICS_API_OPENGL_21
+#cgo freebsd,opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_43
+#cgo freebsd,!opengl11,!opengl21,!opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_33
+#cgo freebsd,angle CFLAGS: -DGRAPHICS_API_OPENGL_ES2
 */
 import "C"

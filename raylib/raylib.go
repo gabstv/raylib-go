@@ -200,6 +200,9 @@ const (
 	// Set to try enabling interlaced video format (for V3D)
 	FlagInterlacedHint = 0x00010000
 
+	// KeyNull is used for no key pressed
+	KeyNull = 0
+
 	// Keyboard Function Keys
 	KeySpace        = 32
 	KeyEscape       = 256
@@ -848,18 +851,54 @@ type MaterialMap struct {
 	Value float32
 }
 
-// Model, meshes, materials and animation data
+// Model is struct of model, meshes, materials and animation data
 type Model struct {
 	// Local transform matrix
-	Transform     Matrix
-	MeshCount     int32
+	Transform Matrix
+	// Number of meshes
+	MeshCount int32
+	// Number of materials
 	MaterialCount int32
-	Meshes        *Mesh
-	Materials     *Material
-	MeshMaterial  *int32
-	BoneCount     int32
-	Bones         *BoneInfo
-	BindPose      *Transform
+	// Meshes array (c array)
+	//
+	// Use Model.GetMeshes instead (go slice)
+	Meshes *Mesh
+	// Materials array (c array)
+	//
+	// Use Model.GetMaterials instead (go slice)
+	Materials *Material
+	// Mesh material number
+	MeshMaterial *int32
+	// Number of bones
+	BoneCount int32
+	// Bones information (skeleton) (c array)
+	//
+	// Use Model.GetBones instead (go slice)
+	Bones *BoneInfo
+	// Bones base transformation (pose) (c array)
+	//
+	// Use Model.GetBindPose instead (go slice)
+	BindPose *Transform
+}
+
+// GetMeshes returns the meshes of a model as go slice
+func (m Model) GetMeshes() []Mesh {
+	return unsafe.Slice(m.Meshes, m.MeshCount)
+}
+
+// GetMaterials returns the materials of a model as go slice
+func (m Model) GetMaterials() []Material {
+	return unsafe.Slice(m.Materials, m.MaterialCount)
+}
+
+// GetBones returns the bones information (skeleton) of a model as go slice
+func (m Model) GetBones() []BoneInfo {
+	return unsafe.Slice(m.Bones, m.BoneCount)
+}
+
+// GetBindPose returns the bones base transformation of a model as go slice
+func (m Model) GetBindPose() []Transform {
+	return unsafe.Slice(m.BindPose, m.BoneCount)
 }
 
 // newModelFromPointer - Returns new Model from pointer
@@ -1195,6 +1234,7 @@ func newRenderTexture2DFromPointer(ptr unsafe.Pointer) RenderTexture2D {
 	return *(*RenderTexture2D)(ptr)
 }
 
+// TraceLogLevel parameter of trace log message
 type TraceLogLevel int
 
 // Trace log level
@@ -1217,3 +1257,39 @@ const (
 	// Disable logging
 	LogNone
 )
+
+// Mouse cursor
+type MouseCursor = int32
+
+const (
+	MouseCursorDefault      MouseCursor = iota // Default pointer shape
+	MouseCursorArrow                           // Arrow shape
+	MouseCursorIBeam                           // Text writing cursor shape
+	MouseCursorCrosshair                       // Cross shape
+	MouseCursorPointingHand                    // Pointing hand cursor
+	MouseCursorResizeEW                        // Horizontal resize/move arrow shape
+	MouseCursorResizeNS                        // Vertical resize/move arrow shape
+	MouseCursorResizeNWSE                      // Top-left to bottom-right diagonal resize/move arrow shape
+	MouseCursorResizeNESW                      // The top-right to bottom-left diagonal resize/move arrow shape
+	MouseCursorResizeAll                       // The omni-directional resize/move cursor shape
+	MouseCursorNotAllowed                      // The operation-not-allowed shape
+)
+
+// N-patch layout
+type NPatchLayout int32
+
+const (
+	NPatchNinePatch            NPatchLayout = iota // Npatch layout: 3x3 tiles
+	NPatchThreePatchVertical                       // Npatch layout: 1x3 tiles
+	NPatchThreePatchHorizontal                     // Npatch layout: 3x1 tiles
+)
+
+// NPatchInfo type, n-patch layout info
+type NPatchInfo struct {
+	Source Rectangle    // Texture source rectangle
+	Left   int32        // Left border offset
+	Top    int32        // Top border offset
+	Right  int32        // Right border offset
+	Bottom int32        // Bottom border offset
+	Layout NPatchLayout // Layout of the n-patch: 3x3, 1x3 or 3x1
+}

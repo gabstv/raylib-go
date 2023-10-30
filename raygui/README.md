@@ -2,4 +2,17 @@
 
 raygui is simple and easy-to-use IMGUI (immediate mode GUI API) library.
 
-![screenshot](https://goo.gl/ieeaLj)
+
+### basic_controls
+
+![Demo](../examples/gui/basic_controls/cyber.png)
+
+
+### controls_test_suite
+
+![Demo](../examples/gui/controls_test_suite/controls_test_suite.png)
+
+
+### scroll_panel
+
+![Demo](../examples/gui/scroll_panel/scroll_panel.png)

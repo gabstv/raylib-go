@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/gen2brain/raylib-go/raylib"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 func main() {
@@ -14,17 +14,15 @@ func main() {
 	camera.Position = rl.NewVector3(10.0, 10.0, 10.0) // Camera position
 	camera.Target = rl.NewVector3(0.0, 0.0, 0.0)      // Camera looking at point
 	camera.Up = rl.NewVector3(0.0, 1.0, 0.0)          // Camera up vector (rotation towards target)
-	camera.Fovy = 45.0                                    // Camera field-of-view Y
+	camera.Fovy = 45.0                                // Camera field-of-view Y
 
 	cubePosition := rl.NewVector3(0.0, 0.0, 0.0)
 	cubeScreenPosition := rl.Vector2{}
 
-	rl.SetCameraMode(camera, rl.CameraFree) // Set a free camera mode
-
 	rl.SetTargetFPS(60)
 
 	for !rl.WindowShouldClose() {
-		rl.UpdateCamera(&camera) // Update camera
+		rl.UpdateCamera(&camera, rl.CameraFree) // Update camera with free camera mode
 
 		// Calculate cube screen space position (with a little offset to be in top)
 		cubeScreenPosition = rl.GetWorldToScreen(rl.NewVector3(cubePosition.X, cubePosition.Y+2.5, cubePosition.Z), camera)
