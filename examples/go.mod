@@ -10,3 +10,11 @@ require (
 	github.com/jakecoffman/cp v1.2.1
 	github.com/neguse/go-box2d-lite v0.0.0-20170921151050-5d8ed9b7272b
 )
+
+replace (
+	github.com/gen2brain/raylib-go/easings => ../easings
+	github.com/gen2brain/raylib-go/physics => ../physics
+	github.com/gen2brain/raylib-go/raygui => ../raygui
+	github.com/gen2brain/raylib-go/raylib => ../raylib
+	github.com/gen2brain/raylib-go/rres => ../rres
+)
