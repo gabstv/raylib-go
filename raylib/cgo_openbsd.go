@@ -1,5 +1,5 @@
-//go:build openbsd && !linux && !drm && !rpi && !android
-// +build openbsd,!linux,!drm,!rpi,!android
+//go:build openbsd && !linux && !drm && !sdl && !android
+// +build openbsd,!linux,!drm,!sdl,!android
 
 package rl
 
@@ -39,15 +39,16 @@ package rl
 #cgo openbsd,!wayland LDFLAGS: -lm -pthread -lX11
 #cgo openbsd,wayland LDFLAGS: -lm -pthread -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
 
-#cgo openbsd,!angle LDFLAGS: -lGL
+#cgo openbsd,!es2,!es3 LDFLAGS: -lGL
 
 #cgo openbsd,!wayland CFLAGS: -D_GLFW_X11
 #cgo openbsd,wayland CFLAGS: -D_GLFW_WAYLAND
 
-#cgo openbsd,opengl11,!angle CFLAGS: -DGRAPHICS_API_OPENGL_11
-#cgo openbsd,opengl21,!angle CFLAGS: -DGRAPHICS_API_OPENGL_21
-#cgo openbsd,opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_43
-#cgo openbsd,!opengl11,!opengl21,!opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_33
-#cgo openbsd,angle CFLAGS: -DGRAPHICS_API_OPENGL_ES2
+#cgo openbsd,opengl11,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_11
+#cgo openbsd,opengl21,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_21
+#cgo openbsd,opengl43,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_43
+#cgo openbsd,!opengl11,!opengl21,!opengl43,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_33
+#cgo openbsd,es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_ES2
+#cgo openbsd,es3,!es2 CFLAGS: -DGRAPHICS_API_OPENGL_ES3
 */
 import "C"

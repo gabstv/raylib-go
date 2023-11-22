@@ -1,5 +1,5 @@
-//go:build linux && !drm && !rpi && !android
-// +build linux,!drm,!rpi,!android
+//go:build linux && !drm && !sdl && !android
+// +build linux,!drm,!sdl,!android
 
 package rl
 
@@ -38,15 +38,16 @@ package rl
 #cgo linux,!wayland LDFLAGS: -lm -pthread -ldl -lrt -lX11
 #cgo linux,wayland LDFLAGS: -lm -pthread -ldl -lrt -lwayland-client -lwayland-cursor -lwayland-egl -lxkbcommon
 
-#cgo linux,!angle LDFLAGS: -lGL
+#cgo linux,!es2,!es3 LDFLAGS: -lGL
 
 #cgo linux,!wayland CFLAGS: -D_GLFW_X11
 #cgo linux,wayland CFLAGS: -D_GLFW_WAYLAND
 
-#cgo linux,opengl11,!angle CFLAGS: -DGRAPHICS_API_OPENGL_11
-#cgo linux,opengl21,!angle CFLAGS: -DGRAPHICS_API_OPENGL_21
-#cgo linux,opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_43
-#cgo linux,!opengl11,!opengl21,!opengl43,!angle CFLAGS: -DGRAPHICS_API_OPENGL_33
-#cgo linux,angle CFLAGS: -DGRAPHICS_API_OPENGL_ES2
+#cgo linux,opengl11,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_11
+#cgo linux,opengl21,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_21
+#cgo linux,opengl43,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_43
+#cgo linux,!opengl11,!opengl21,!opengl43,!es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_33
+#cgo linux,es2,!es3 CFLAGS: -DGRAPHICS_API_OPENGL_ES2
+#cgo linux,es3,!es2 CFLAGS: -DGRAPHICS_API_OPENGL_ES3
 */
 import "C"

@@ -1,45 +1,14 @@
 /*
-Package raylib - Go bindings for raylib, a simple and easy-to-use library to learn videogames programming.
+Package raylib - Go bindings for raylib, a simple and easy-to-use library to enjoy videogames programming.
 
 raylib is highly inspired by Borland BGI graphics lib and by XNA framework.
-
 raylib could be useful for prototyping, tools development, graphic applications, embedded systems and education.
 
 NOTE for ADVENTURERS: raylib is a programming library to learn videogames programming; no fancy interface, no visual helpers, no auto-debugging... just coding in the most pure spartan-programmers way.
-
-Example:
-
-	package main
-
-	import "github.com/gen2brain/raylib-go/raylib"
-
-	func main() {
-		rl.InitWindow(800, 450, "raylib [core] example - basic window")
-
-		rl.SetTargetFPS(60)
-
-		for !rl.WindowShouldClose() {
-			rl.BeginDrawing()
-
-			rl.ClearBackground(rl.RayWhite)
-
-			rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
-
-			rl.EndDrawing()
-		}
-
-		rl.CloseWindow()
-	}
 */
 package rl
 
-/*
-#include "raylib.h"
-#include <stdlib.h>
-*/
-import "C"
 import (
-	"image"
 	"image/color"
 	"io"
 	"runtime"
@@ -68,24 +37,18 @@ type Wave struct {
 // NewWave - Returns new Wave
 func NewWave(sampleCount, sampleRate, sampleSize, channels uint32, data []byte) Wave {
 	d := unsafe.Pointer(&data[0])
+
 	return Wave{sampleCount, sampleRate, sampleSize, channels, d}
 }
 
-// newWaveFromPointer - Returns new Wave from pointer
-func newWaveFromPointer(ptr unsafe.Pointer) Wave {
-	return *(*Wave)(ptr)
-}
+// AudioCallback function.
+type AudioCallback func(data []float32, frames int)
 
 // Sound source type
 type Sound struct {
 	Stream     AudioStream
 	FrameCount uint32
 	_          [4]byte
-}
-
-// newSoundFromPointer - Returns new Sound from pointer
-func newSoundFromPointer(ptr unsafe.Pointer) Sound {
-	return *(*Sound)(ptr)
 }
 
 // Music type (file streaming from memory)
@@ -98,18 +61,13 @@ type Music struct {
 	CtxData    unsafe.Pointer
 }
 
-// newMusicFromPointer - Returns new Music from pointer
-func newMusicFromPointer(ptr unsafe.Pointer) Music {
-	return *(*Music)(ptr)
-}
-
 // AudioStream type
 // NOTE: Useful to create custom audio streams not bound to a specific file
 type AudioStream struct {
 	// Buffer
-	Buffer *C.rAudioBuffer
+	Buffer *AudioBuffer
 	// Processor
-	Processor *C.rAudioProcessor
+	Processor *AudioProcessor
 	// Frequency (samples per second)
 	SampleRate uint32
 	// Bit depth (bits per sample): 8, 16, 32 (24 not supported)
@@ -119,9 +77,106 @@ type AudioStream struct {
 	_        [4]byte
 }
 
-// newAudioStreamFromPointer - Returns new AudioStream from pointer
-func newAudioStreamFromPointer(ptr unsafe.Pointer) AudioStream {
-	return *(*AudioStream)(ptr)
+type maDataConverter struct {
+	FormatIn                uint32
+	FormatOut               uint32
+	ChannelsIn              uint32
+	ChannelsOut             uint32
+	SampleRateIn            uint32
+	SampleRateOut           uint32
+	DitherMode              uint32
+	ExecutionPath           uint32
+	ChannelConverter        maChannelConverter
+	Resampler               maResampler
+	HasPreFormatConversion  uint8
+	HasPostFormatConversion uint8
+	HasChannelConverter     uint8
+	HasResampler            uint8
+	IsPassthrough           uint8
+	X_ownsHeap              uint8
+	X_pHeap                 *byte
+}
+
+type maChannelConverter struct {
+	Format         uint32
+	ChannelsIn     uint32
+	ChannelsOut    uint32
+	MixingMode     uint32
+	ConversionPath uint32
+	PChannelMapIn  *uint8
+	PChannelMapOut *uint8
+	PShuffleTable  *uint8
+	Weights        [8]byte
+	X_pHeap        *byte
+	X_ownsHeap     uint32
+	Pad_cgo_0      [4]byte
+}
+
+type maResampler struct {
+	PBackend         *byte
+	PBackendVTable   *maResamplingBackendVtable
+	PBackendUserData *byte
+	Format           uint32
+	Channels         uint32
+	SampleRateIn     uint32
+	SampleRateOut    uint32
+	State            [136]byte
+	X_pHeap          *byte
+	X_ownsHeap       uint32
+	Pad_cgo_0        [4]byte
+}
+
+type maResamplingBackendVtable struct {
+	OnGetHeapSize                 *[0]byte
+	OnInit                        *[0]byte
+	OnUninit                      *[0]byte
+	OnProcess                     *[0]byte
+	OnSetRate                     *[0]byte
+	OnGetInputLatency             *[0]byte
+	OnGetOutputLatency            *[0]byte
+	OnGetRequiredInputFrameCount  *[0]byte
+	OnGetExpectedOutputFrameCount *[0]byte
+	OnReset                       *[0]byte
+}
+
+type AudioBuffer struct {
+	Converter            maDataConverter
+	Callback             *[0]byte
+	Processor            *AudioProcessor
+	Volume               float32
+	Pitch                float32
+	Pan                  float32
+	Playing              bool
+	Paused               bool
+	Looping              bool
+	Usage                int32
+	IsSubBufferProcessed [2]bool
+	SizeInFrames         uint32
+	FrameCursorPos       uint32
+	FramesProcessed      uint32
+	Data                 *uint8
+	Next                 *AudioBuffer
+	Prev                 *AudioBuffer
+}
+
+type AudioProcessor struct {
+	Process *[0]byte
+	Next    *AudioProcessor
+	Prev    *AudioProcessor
+}
+
+// AutomationEvent - Automation event
+type AutomationEvent struct {
+	Frame  uint32
+	Type   uint32
+	Params [4]int32
+}
+
+// AutomationEventList - Automation event list
+type AutomationEventList struct {
+	Capacity uint32
+	Count    uint32
+	Events   *AutomationEvent
 }
 
 // CameraMode type
@@ -143,22 +198,6 @@ type CameraProjection int32
 const (
 	CameraPerspective CameraProjection = iota
 	CameraOrthographic
-)
-
-// ShaderUniformDataType type
-type ShaderUniformDataType int32
-
-// ShaderUniformDataType enumeration
-const (
-	ShaderUniformFloat ShaderUniformDataType = iota
-	ShaderUniformVec2
-	ShaderUniformVec3
-	ShaderUniformVec4
-	ShaderUniformInt
-	ShaderUniformIvec2
-	ShaderUniformIvec3
-	ShaderUniformIvec4
-	ShaderUniformSampler2d
 )
 
 // Some basic Defines
@@ -320,99 +359,69 @@ const (
 	KeyVolumeUp   = 24
 	KeyVolumeDown = 25
 
-	// Mouse Buttons
-	MouseLeftButton    = 0
-	MouseRightButton   = 1
-	MouseMiddleButton  = 2
-	MouseSideButton    = 3
-	MouseExtraButton   = 4
-	MouseForwardButton = 5
-	MouseBackButton    = 6
+	MouseLeftButton   = MouseButtonLeft
+	MouseRightButton  = MouseButtonRight
+	MouseMiddleButton = MouseButtonMiddle
+)
 
-	// Touch points registered
-	MaxTouchPoints = 2
+// Mouse Buttons
+const (
+	MouseButtonLeft = iota
+	MouseButtonRight
+	MouseButtonMiddle
+	MouseButtonSide
+	MouseButtonExtra
+	MouseButtonForward
+	MouseButtonBack
+)
 
-	// Gamepad Number
-	GamepadPlayer1 = 0
-	GamepadPlayer2 = 1
-	GamepadPlayer3 = 2
-	GamepadPlayer4 = 3
+// Mouse cursor
+type MouseCursor = int32
 
-	// Gamepad Buttons/Axis
+const (
+	MouseCursorDefault      MouseCursor = iota // Default pointer shape
+	MouseCursorArrow                           // Arrow shape
+	MouseCursorIBeam                           // Text writing cursor shape
+	MouseCursorCrosshair                       // Cross shape
+	MouseCursorPointingHand                    // Pointing hand cursor
+	MouseCursorResizeEW                        // Horizontal resize/move arrow shape
+	MouseCursorResizeNS                        // Vertical resize/move arrow shape
+	MouseCursorResizeNWSE                      // Top-left to bottom-right diagonal resize/move arrow shape
+	MouseCursorResizeNESW                      // The top-right to bottom-left diagonal resize/move arrow shape
+	MouseCursorResizeAll                       // The omni-directional resize/move cursor shape
+	MouseCursorNotAllowed                      // The operation-not-allowed shape
+)
 
-	// PS3 USB Controller Buttons
-	GamepadPs3ButtonTriangle = 0
-	GamepadPs3ButtonCircle   = 1
-	GamepadPs3ButtonCross    = 2
-	GamepadPs3ButtonSquare   = 3
-	GamepadPs3ButtonL1       = 6
-	GamepadPs3ButtonR1       = 7
-	GamepadPs3ButtonL2       = 4
-	GamepadPs3ButtonR2       = 5
-	GamepadPs3ButtonStart    = 8
-	GamepadPs3ButtonSelect   = 9
-	GamepadPs3ButtonUp       = 24
-	GamepadPs3ButtonRight    = 25
-	GamepadPs3ButtonDown     = 26
-	GamepadPs3ButtonLeft     = 27
-	GamepadPs3ButtonPs       = 12
+// Gamepad Buttons
+const (
+	GamepadButtonUnknown        = iota // Unknown button, just for error checking
+	GamepadButtonLeftFaceUp            // Gamepad left DPAD up button
+	GamepadButtonLeftFaceRight         // Gamepad left DPAD right button
+	GamepadButtonLeftFaceDown          // Gamepad left DPAD down button
+	GamepadButtonLeftFaceLeft          // Gamepad left DPAD left button
+	GamepadButtonRightFaceUp           // Gamepad right button up (i.e. PS3: Triangle, Xbox: Y)
+	GamepadButtonRightFaceRight        // Gamepad right button right (i.e. PS3: Square, Xbox: X)
+	GamepadButtonRightFaceDown         // Gamepad right button down (i.e. PS3: Cross, Xbox: A)
+	GamepadButtonRightFaceLeft         // Gamepad right button left (i.e. PS3: Circle, Xbox: B)
+	GamepadButtonLeftTrigger1          // Gamepad top/back trigger left (first), it could be a trailing button
+	GamepadButtonLeftTrigger2          // Gamepad top/back trigger left (second), it could be a trailing button
+	GamepadButtonRightTrigger1         // Gamepad top/back trigger right (one), it could be a trailing button
+	GamepadButtonRightTrigger2         // Gamepad top/back trigger right (second), it could be a trailing button
+	GamepadButtonMiddleLeft            // Gamepad center buttons, left one (i.e. PS3: Select)
+	GamepadButtonMiddle                // Gamepad center buttons, middle one (i.e. PS3: PS, Xbox: XBOX)
+	GamepadButtonMiddleRight           // Gamepad center buttons, right one (i.e. PS3: Start)
+	GamepadButtonLeftThumb             // Gamepad joystick pressed button left
+	GamepadButtonRightThumb            // Gamepad joystick pressed button right
+)
 
-	// PS3 USB Controller Axis
-	GamepadPs3AxisLeftX  = 0
-	GamepadPs3AxisLeftY  = 1
-	GamepadPs3AxisRightX = 2
-	GamepadPs3AxisRightY = 5
-	// [1..-1] (pressure-level)
-	GamepadPs3AxisL2 = 3
-	// [1..-1] (pressure-level)
-	GamepadPs3AxisR2 = 4
-
-	// Xbox360 USB Controller Buttons
-	GamepadXboxButtonA      = 0
-	GamepadXboxButtonB      = 1
-	GamepadXboxButtonX      = 2
-	GamepadXboxButtonY      = 3
-	GamepadXboxButtonLb     = 4
-	GamepadXboxButtonRb     = 5
-	GamepadXboxButtonSelect = 6
-	GamepadXboxButtonStart  = 7
-	GamepadXboxButtonUp     = 10
-	GamepadXboxButtonRight  = 11
-	GamepadXboxButtonDown   = 12
-	GamepadXboxButtonLeft   = 13
-	GamepadXboxButtonHome   = 8
-
-	// Android Gamepad Controller (SNES CLASSIC)
-	GamepadAndroidDpadUp     = 19
-	GamepadAndroidDpadDown   = 20
-	GamepadAndroidDpadLeft   = 21
-	GamepadAndroidDpadRight  = 22
-	GamepadAndroidDpadCenter = 23
-
-	GamepadAndroidButtonA  = 96
-	GamepadAndroidButtonB  = 97
-	GamepadAndroidButtonC  = 98
-	GamepadAndroidButtonX  = 99
-	GamepadAndroidButtonY  = 100
-	GamepadAndroidButtonZ  = 101
-	GamepadAndroidButtonL1 = 102
-	GamepadAndroidButtonR1 = 103
-	GamepadAndroidButtonL2 = 104
-	GamepadAndroidButtonR2 = 105
-
-	// Xbox360 USB Controller Axis
-	// [-1..1] (left->right)
-	GamepadXboxAxisLeftX = 0
-	// [1..-1] (up->down)
-	GamepadXboxAxisLeftY = 1
-	// [-1..1] (left->right)
-	GamepadXboxAxisRightX = 2
-	// [1..-1] (up->down)
-	GamepadXboxAxisRightY = 3
-	// [-1..1] (pressure-level)
-	GamepadXboxAxisLt = 4
-	// [-1..1] (pressure-level)
-	GamepadXboxAxisRt = 5
+// Gamepad Axis
+const (
+	GamepadAxisLeftX        = iota // Gamepad left stick X axis
+	GamepadAxisLeftY               // Gamepad left stick Y axis
+	GamepadAxisRightX              // Gamepad right stick X axis
+	GamepadAxisRightY              // Gamepad right stick Y axis
+	GamepadAxisLeftTrigger         // Gamepad back trigger left, pressure level: [1..-1]
+	GamepadAxisRightTrigger        // Gamepad back trigger right, pressure level: [1..-1]
 )
 
 // Some Basic Colors
@@ -483,11 +492,6 @@ func NewVector2(x, y float32) Vector2 {
 	return Vector2{x, y}
 }
 
-// newVector2FromPointer - Returns new Vector2 from pointer
-func newVector2FromPointer(ptr unsafe.Pointer) Vector2 {
-	return *(*Vector2)(ptr)
-}
-
 // Vector3 type
 type Vector3 struct {
 	X float32
@@ -496,13 +500,8 @@ type Vector3 struct {
 }
 
 // NewVector3 - Returns new Vector3
-func NewVector3(X, Y, Z float32) Vector3 {
-	return Vector3{X, Y, Z}
-}
-
-// newVector3FromPointer - Returns new Vector3 from pointer
-func newVector3FromPointer(ptr unsafe.Pointer) Vector3 {
-	return *(*Vector3)(ptr)
+func NewVector3(x, y, z float32) Vector3 {
+	return Vector3{x, y, z}
 }
 
 // Vector4 type
@@ -514,13 +513,8 @@ type Vector4 struct {
 }
 
 // NewVector4 - Returns new Vector4
-func NewVector4(X, Y, Z, W float32) Vector4 {
-	return Vector4{X, Y, Z, W}
-}
-
-// newVector4FromPointer - Returns new Vector4 from pointer
-func newVector4FromPointer(ptr unsafe.Pointer) Vector4 {
-	return *(*Vector4)(ptr)
+func NewVector4(x, y, z, w float32) Vector4 {
+	return Vector4{x, y, z, w}
 }
 
 // Matrix type (OpenGL style 4x4 - right handed, column major)
@@ -536,11 +530,6 @@ func NewMatrix(m0, m4, m8, m12, m1, m5, m9, m13, m2, m6, m10, m14, m3, m7, m11, 
 	return Matrix{m0, m4, m8, m12, m1, m5, m9, m13, m2, m6, m10, m14, m3, m7, m11, m15}
 }
 
-// newMatrixFromPointer - Returns new Matrix from pointer
-func newMatrixFromPointer(ptr unsafe.Pointer) Matrix {
-	return *(*Matrix)(ptr)
-}
-
 // Mat2 type (used for polygon shape rotation matrix)
 type Mat2 struct {
 	M00 float32
@@ -554,13 +543,8 @@ func NewMat2(m0, m1, m10, m11 float32) Mat2 {
 	return Mat2{m0, m1, m10, m11}
 }
 
-// Quaternion type
-type Quaternion struct {
-	X float32
-	Y float32
-	Z float32
-	W float32
-}
+// Quaternion, 4 components (Vector4 alias)
+type Quaternion = Vector4
 
 // NewQuaternion - Returns new Quaternion
 func NewQuaternion(x, y, z, w float32) Quaternion {
@@ -576,11 +560,6 @@ func NewColor(r, g, b, a uint8) color.RGBA {
 	return color.RGBA{r, g, b, a}
 }
 
-// newColorFromPointer - Returns new Color from pointer
-func newColorFromPointer(ptr unsafe.Pointer) color.RGBA {
-	return *(*color.RGBA)(ptr)
-}
-
 // Rectangle type
 type Rectangle struct {
 	X      float32
@@ -592,11 +571,6 @@ type Rectangle struct {
 // NewRectangle - Returns new Rectangle
 func NewRectangle(x, y, width, height float32) Rectangle {
 	return Rectangle{x, y, width, height}
-}
-
-// newRectangleFromPointer - Returns new Rectangle from pointer
-func newRectangleFromPointer(ptr unsafe.Pointer) Rectangle {
-	return *(*Rectangle)(ptr)
 }
 
 // ToInt32 converts rectangle to int32 variant
@@ -651,11 +625,6 @@ func NewCamera3D(pos, target, up Vector3, fovy float32, ct CameraProjection) Cam
 	return Camera3D{pos, target, up, fovy, ct}
 }
 
-// newCamera3DFromPointer - Returns new Camera3D from pointer
-func newCamera3DFromPointer(ptr unsafe.Pointer) Camera3D {
-	return *(*Camera3D)(ptr)
-}
-
 // Camera2D type, defines a 2d camera
 type Camera2D struct {
 	// Camera offset (displacement from target)
@@ -673,11 +642,6 @@ func NewCamera2D(offset, target Vector2, rotation, zoom float32) Camera2D {
 	return Camera2D{offset, target, rotation, zoom}
 }
 
-// newCamera2DFromPointer - Returns new Camera2D from pointer
-func newCamera2DFromPointer(ptr unsafe.Pointer) Camera2D {
-	return *(*Camera2D)(ptr)
-}
-
 // BoundingBox type
 type BoundingBox struct {
 	// Minimum vertex box-corner
@@ -689,11 +653,6 @@ type BoundingBox struct {
 // NewBoundingBox - Returns new BoundingBox
 func NewBoundingBox(min, max Vector3) BoundingBox {
 	return BoundingBox{min, max}
-}
-
-// newBoundingBoxFromPointer - Returns new BoundingBox from pointer
-func newBoundingBoxFromPointer(ptr unsafe.Pointer) BoundingBox {
-	return *(*BoundingBox)(ptr)
 }
 
 // Asset file
@@ -723,35 +682,54 @@ const (
 
 // Shader location point type
 const (
-	LocVertexPosition = iota
-	LocVertexTexcoord01
-	LocVertexTexcoord02
-	LocVertexNormal
-	LocVertexTangent
-	LocVertexColor
-	LocMatrixMvp
-	LocMatrixView
-	LocMatrixProjection
-	LocMatrixModel
-	LocMatrixNormal
-	LocVectorView
-	LocColorDiffuse
-	LocColorSpecular
-	LocColorAmbient
-	LocMapAlbedo
-	LocMapMetalness
-	LocMapNormal
-	LocMapRoughness
-	LocMapOcclusion
-	LocMapEmission
-	LocMapHeight
-	LocMapCubemap
-	LocMapIrradiance
-	LocMapPrefilter
-	LocMapBrdf
+	ShaderLocVertexPosition = iota
+	ShaderLocVertexTexcoord01
+	ShaderLocVertexTexcoord02
+	ShaderLocVertexNormal
+	ShaderLocVertexTangent
+	ShaderLocVertexColor
+	ShaderLocMatrixMvp
+	ShaderLocMatrixView
+	ShaderLocMatrixProjection
+	ShaderLocMatrixModel
+	ShaderLocMatrixNormal
+	ShaderLocVectorView
+	ShaderLocColorDiffuse
+	ShaderLocColorSpecular
+	ShaderLocColorAmbient
+	ShaderLocMapAlbedo
+	ShaderLocMapMetalness
+	ShaderLocMapNormal
+	ShaderLocMapRoughness
+	ShaderLocMapOcclusion
+	ShaderLocMapEmission
+	ShaderLocMapHeight
+	ShaderLocMapCubemap
+	ShaderLocMapIrradiance
+	ShaderLocMapPrefilter
+	ShaderLocMapBrdf
+
+	ShaderLocMapDiffuse  = ShaderLocMapAlbedo
+	ShaderLocMapSpecular = ShaderLocMapMetalness
 )
 
-// Material map type
+// ShaderUniformDataType type
+type ShaderUniformDataType int32
+
+// ShaderUniformDataType enumeration
+const (
+	ShaderUniformFloat ShaderUniformDataType = iota
+	ShaderUniformVec2
+	ShaderUniformVec3
+	ShaderUniformVec4
+	ShaderUniformInt
+	ShaderUniformIvec2
+	ShaderUniformIvec3
+	ShaderUniformIvec4
+	ShaderUniformSampler2d
+)
+
+// Material map index
 const (
 	MapAlbedo = iota
 	MapMetalness
@@ -764,14 +742,10 @@ const (
 	MapCubemap
 	MapIrradiance
 	MapPrefilter
-)
+	MapBrdf
 
-// Material map type
-const (
-	MapDiffuse     = MapAlbedo
-	MapSpecular    = MapMetalness
-	LocMapDiffuse  = LocMapAlbedo
-	LocMapSpecular = LocMapMetalness
+	MapDiffuse  = MapAlbedo
+	MapSpecular = MapMetalness
 )
 
 // Shader and material limits
@@ -816,11 +790,6 @@ type Mesh struct {
 	VboID *uint32
 }
 
-// newMeshFromPointer - Returns new Mesh from pointer
-func newMeshFromPointer(ptr unsafe.Pointer) Mesh {
-	return *(*Mesh)(ptr)
-}
-
 // Material type
 type Material struct {
 	// Shader
@@ -831,14 +800,9 @@ type Material struct {
 	Params [4]float32
 }
 
-// newMaterialFromPointer - Returns new Material from pointer
-func newMaterialFromPointer(ptr unsafe.Pointer) Material {
-	return *(*Material)(ptr)
-}
-
 // GetMap - Get pointer to MaterialMap by map type
 func (mt Material) GetMap(index int32) *MaterialMap {
-	return (*MaterialMap)(unsafe.Pointer(uintptr(unsafe.Pointer(mt.Maps)) + uintptr(index)*uintptr(unsafe.Sizeof(MaterialMap{}))))
+	return (*MaterialMap)(unsafe.Pointer(uintptr(unsafe.Pointer(mt.Maps)) + uintptr(index)*unsafe.Sizeof(MaterialMap{})))
 }
 
 // MaterialMap type
@@ -901,11 +865,6 @@ func (m Model) GetBindPose() []Transform {
 	return unsafe.Slice(m.BindPose, m.BoneCount)
 }
 
-// newModelFromPointer - Returns new Model from pointer
-func newModelFromPointer(ptr unsafe.Pointer) Model {
-	return *(*Model)(ptr)
-}
-
 // BoneInfo type
 type BoneInfo struct {
 	Name   [32]int8
@@ -932,22 +891,13 @@ func NewRay(position, direction Vector3) Ray {
 	return Ray{position, direction}
 }
 
-// newRayFromPointer - Returns new Ray from pointer
-func newRayFromPointer(ptr unsafe.Pointer) Ray {
-	return *(*Ray)(ptr)
-}
-
 // ModelAnimation type
 type ModelAnimation struct {
 	BoneCount  int32
 	FrameCount int32
 	Bones      *BoneInfo
 	FramePoses **Transform
-}
-
-// newModelAnimationFromPointer - Returns new ModelAnimation from pointer
-func newModelAnimationFromPointer(ptr unsafe.Pointer) ModelAnimation {
-	return *(*ModelAnimation)(ptr)
+	Name       [32]int8
 }
 
 // RayCollision type - ray hit information
@@ -961,11 +911,6 @@ type RayCollision struct {
 // NewRayCollision - Returns new RayCollision
 func NewRayCollision(hit bool, distance float32, point, normal Vector3) RayCollision {
 	return RayCollision{hit, distance, point, normal}
-}
-
-// newRayCollisionFromPointer - Returns new RayCollision from pointer
-func newRayCollisionFromPointer(ptr unsafe.Pointer) RayCollision {
-	return *(*RayCollision)(ptr)
 }
 
 // BlendMode type
@@ -994,11 +939,6 @@ type Shader struct {
 // NewShader - Returns new Shader
 func NewShader(id uint32, locs *int32) Shader {
 	return Shader{id, locs}
-}
-
-// newShaderFromPointer - Returns new Shader from pointer
-func newShaderFromPointer(ptr unsafe.Pointer) Shader {
-	return *(*Shader)(ptr)
 }
 
 // GetLocation - Get shader value's location
@@ -1030,11 +970,6 @@ func NewGlyphInfo(value int32, offsetX, offsetY, advanceX int32, image Image) Gl
 	return GlyphInfo{value, offsetX, offsetY, advanceX, image}
 }
 
-// newGlyphInfoFromPointer - Returns new GlyphInfo from pointer
-func newGlyphInfoFromPointer(ptr unsafe.Pointer) GlyphInfo {
-	return *(*GlyphInfo)(ptr)
-}
-
 // Font type, includes texture and charSet array data
 type Font struct {
 	// Base size (default chars height)
@@ -1051,10 +986,12 @@ type Font struct {
 	Chars *GlyphInfo
 }
 
-// newFontFromPointer - Returns new Font from pointer
-func newFontFromPointer(ptr unsafe.Pointer) Font {
-	return *(*Font)(ptr)
-}
+// Font type, defines generation method
+const (
+	FontDefault = iota // Default font generation, anti-aliased
+	FontBitmap         // Bitmap font generation, no anti-aliasing
+	FontSdf            // SDF font generation, requires external shader
+)
 
 // PixelFormat - Texture format
 type PixelFormat int32
@@ -1138,6 +1075,16 @@ const (
 	WrapMirrorClamp
 )
 
+// Cubemap layouts
+const (
+	CubemapLayoutAutoDetect       = iota // Automatically detect layout type
+	CubemapLayoutLineVertical            // Layout is defined by a vertical line with faces
+	CubemapLayoutLineHorizontal          // Layout is defined by a horizontal line with faces
+	CubemapLayoutCrossThreeByFour        // Layout is defined by a 3x4 cross with cubemap faces
+	CubemapLayoutCrossFourByThree        // Layout is defined by a 4x3 cross with cubemap faces
+	CubemapLayoutPanorama                // Layout is defined by a panorama image (equirrectangular map)
+)
+
 // Image type, bpp always RGBA (32bit)
 // NOTE: Data stored in CPU memory (RAM)
 type Image struct {
@@ -1156,37 +1103,8 @@ type Image struct {
 // NewImage - Returns new Image
 func NewImage(data []byte, width, height, mipmaps int32, format PixelFormat) *Image {
 	d := unsafe.Pointer(&data[0])
+
 	return &Image{d, width, height, mipmaps, format}
-}
-
-// newImageFromPointer - Returns new Image from pointer
-func newImageFromPointer(ptr unsafe.Pointer) *Image {
-	return (*Image)(ptr)
-}
-
-// NewImageFromImage - Returns new Image from Go image.Image
-func NewImageFromImage(img image.Image) *Image {
-	size := img.Bounds().Size()
-
-	cx := (C.int)(size.X)
-	cy := (C.int)(size.Y)
-	ccolor := colorCptr(White)
-	ret := C.GenImageColor(cx, cy, *ccolor)
-
-	for y := 0; y < size.Y; y++ {
-		for x := 0; x < size.X; x++ {
-			color := img.At(x, y)
-			r, g, b, a := color.RGBA()
-			rcolor := NewColor(uint8(r), uint8(g), uint8(b), uint8(a))
-			ccolor = colorCptr(rcolor)
-
-			cx = (C.int)(x)
-			cy = (C.int)(y)
-			C.ImageDrawPixel(&ret, cx, cy, *ccolor)
-		}
-	}
-	v := newImageFromPointer(unsafe.Pointer(&ret))
-	return v
 }
 
 // Texture2D type, bpp always RGBA (32bit)
@@ -1209,11 +1127,6 @@ func NewTexture2D(id uint32, width, height, mipmaps int32, format PixelFormat) T
 	return Texture2D{id, width, height, mipmaps, format}
 }
 
-// newTexture2DFromPointer - Returns new Texture2D from pointer
-func newTexture2DFromPointer(ptr unsafe.Pointer) Texture2D {
-	return *(*Texture2D)(ptr)
-}
-
 // RenderTexture2D type, for texture rendering
 type RenderTexture2D struct {
 	// Render texture (fbo) id
@@ -1229,10 +1142,8 @@ func NewRenderTexture2D(id uint32, texture, depth Texture2D) RenderTexture2D {
 	return RenderTexture2D{id, texture, depth}
 }
 
-// newRenderTexture2DFromPointer - Returns new RenderTexture2D from pointer
-func newRenderTexture2DFromPointer(ptr unsafe.Pointer) RenderTexture2D {
-	return *(*RenderTexture2D)(ptr)
-}
+// TraceLogCallbackFun - function that will recive the trace log messages
+type TraceLogCallbackFun func(int, string)
 
 // TraceLogLevel parameter of trace log message
 type TraceLogLevel int
@@ -1258,23 +1169,6 @@ const (
 	LogNone
 )
 
-// Mouse cursor
-type MouseCursor = int32
-
-const (
-	MouseCursorDefault      MouseCursor = iota // Default pointer shape
-	MouseCursorArrow                           // Arrow shape
-	MouseCursorIBeam                           // Text writing cursor shape
-	MouseCursorCrosshair                       // Cross shape
-	MouseCursorPointingHand                    // Pointing hand cursor
-	MouseCursorResizeEW                        // Horizontal resize/move arrow shape
-	MouseCursorResizeNS                        // Vertical resize/move arrow shape
-	MouseCursorResizeNWSE                      // Top-left to bottom-right diagonal resize/move arrow shape
-	MouseCursorResizeNESW                      // The top-right to bottom-left diagonal resize/move arrow shape
-	MouseCursorResizeAll                       // The omni-directional resize/move cursor shape
-	MouseCursorNotAllowed                      // The operation-not-allowed shape
-)
-
 // N-patch layout
 type NPatchLayout int32
 
@@ -1292,4 +1186,30 @@ type NPatchInfo struct {
 	Right  int32        // Right border offset
 	Bottom int32        // Bottom border offset
 	Layout NPatchLayout // Layout of the n-patch: 3x3, 1x3 or 3x1
+}
+
+// VrStereoConfig, VR stereo rendering configuration for simulator
+type VrStereoConfig struct {
+	Projection        [2]Matrix  // VR projection matrices (per eye)
+	ViewOffset        [2]Matrix  // VR view offset matrices (per eye)
+	LeftLensCenter    [2]float32 // VR left lens center
+	RightLensCenter   [2]float32 // VR right lens center
+	LeftScreenCenter  [2]float32 // VR left screen center
+	RightScreenCenter [2]float32 // VR right screen center
+	Scale             [2]float32 // VR distortion scale
+	ScaleIn           [2]float32 // VR distortion scale in
+}
+
+// VrDeviceInfo, Head-Mounted-Display device parameters
+type VrDeviceInfo struct {
+	HResolution            int32      // Horizontal resolution in pixels
+	VResolution            int32      // Vertical resolution in pixels
+	HScreenSize            float32    // Horizontal size in meters
+	VScreenSize            float32    // Vertical size in meters
+	VScreenCenter          float32    // Screen center in meters
+	EyeToScreenDistance    float32    // Distance between eye and display in meters
+	LensSeparationDistance float32    // Lens separation distance in meters
+	InterpupillaryDistance float32    // IPD (distance between pupils) in meters
+	LensDistortionValues   [4]float32 // Lens distortion constant parameters
+	ChromaAbCorrection     [4]float32 // Chromatic aberration correction parameters
 }
